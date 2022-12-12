@@ -18,8 +18,8 @@ export async function getRentals(req, res){
         const customers = await connection.query("SELECT customers.id, customers.name FROM customers")
         const games = await connection.query(`SELECT games.id, games.name, categories.id AS "categoryId", categories.name AS "categoryName" FROM games JOIN categories ON games."categoryId" = categories.id`)
         if(!rentals){
-            console.log("Not found");
             res.sendStatus(404)
+            return
         }
 
         rentals.rows.forEach(r => {
@@ -47,14 +47,35 @@ export async function postRentalsInsert(req, res){
     const {customerId, gameId, daysRented} = req.body;
     const date = new Date();
 
-    try{
-        const game = await connection.query("SELECT * FROM games WHERE id = $1", [gameId])
-        const rentailValue = (game.rows[0].pricePerDay)*daysRented
+    if(daysRented <= 0){
+        res.sendStatus(400)
+        return
+    }
 
-        await connection.query(`INSERT INTO rentals ("customerId", "gameId", "daysRented", "rentDate", "originalPrice") values ($1, $2, $3, $4, $5)`, [customerId, gameId, daysRented, date, rentailValue])
+    try{
+        const customer = await connection.query("SELECT * FROM customers WHERE id = $1", [customerId])
+
+        if(customer.rows.length === 0){
+            res.sendStatus(400)
+            return
+        }
+
+        const game = await connection.query("SELECT * FROM games WHERE id = $1", [gameId])
+        const rental = await connection.query(`SELECT * FROM rentals WHERE "gameId" = $1 AND "returnDate" IS null`, [gameId])
+
+        if(game.rows.length === 0){
+            res.sendStatus(400)
+            return
+        }else if(rental.rows.length >= game.rows[0].stockTotal){
+            res.sendStatus(400)
+            return
+        }
+
+        const rentalValue = (game.rows[0].pricePerDay)*daysRented
+
+        await connection.query(`INSERT INTO rentals ("customerId", "gameId", "daysRented", "rentDate", "originalPrice") values ($1, $2, $3, $4, $5)`, [customerId, gameId, daysRented, date, rentalValue])
 
         res.sendStatus(201)
-
         
     }catch(err){
         console.log(err);
@@ -69,7 +90,7 @@ export async function postRentalsConclude(req, res){
     try{
         const rental = await connection.query("SELECT * FROM rentals WHERE id = $1", [id])
 
-        if(!rental.rows){
+        if(rental.rows.length === 0){
             res.sendStatus(404)
             return
         }else if(rental.rows[0].returnDate !== null){
@@ -90,7 +111,6 @@ export async function postRentalsConclude(req, res){
 
         res.sendStatus(200);
 
-        
     }catch(err){
         console.log(err);
         res.sendStatus(500);
@@ -104,7 +124,7 @@ export async function deleteRental(req, res){
     try{
         let rental = await connection.query("SELECT * FROM rentals WHERE id = $1", [id])
 
-        if(!rental.rows){
+        if(rental.rows.length === 0){
             res.sendStatus(404)
             return
         }else if(rental.rows[0].returnDate === null){

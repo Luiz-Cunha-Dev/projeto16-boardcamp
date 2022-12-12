@@ -1,9 +1,18 @@
 import { connection } from "../database/db.js";
+import { customerSchema } from "../schemas/customers.Schema.js";
 
 export async function getCustomers(req, res){
+    const cpf = req.query.cpf
+    let customers;
 
     try{
-        const customers = await connection.query("SELECT * FROM customers")
+        if(!cpf){
+            customers = await connection.query("SELECT * FROM customers")
+        }else{
+            customers = await connection.query(`SELECT * FROM customers WHERE cpf LIKE $1`, [`${cpf}%`])
+        }
+
+        
 
         if(!customers){
             console.log("Not found");
@@ -27,9 +36,9 @@ export async function getCustomer(req, res){
     try{
         const customers = await connection.query("SELECT * FROM customers WHERE id = $1", [id])
 
-        if(!customers){
-            console.log("Not found");
+        if(customers.rows.length === 0){
             res.sendStatus(404)
+            return
         }
 
         customers.rows.forEach(c => {
@@ -45,10 +54,19 @@ export async function getCustomer(req, res){
 }
 
 export async function postCustomers(req, res){
-    const {name, phone, cpf, birthday} = req.body;
+    const customer = req.body;
+    const {name, phone, cpf, birthday} = customer;
     
 
     try{
+        const {error} = customerSchema.validate(customer, {abortEarly: false});
+
+        if(error){
+            const erros = error.details.map(d => d.message);
+            res.status(400).send(erros);
+            return
+        }
+
         let existingCpf = await connection.query("SELECT * FROM customers WHERE cpf = $1", [cpf])
 
         if(existingCpf.rows.length !== 0){
@@ -69,12 +87,21 @@ export async function postCustomers(req, res){
 
 export async function putCustomer(req, res){
     const {id} = req.params;
-    const {name, phone, cpf, birthday} = req.body;
-
+    const customer = req.body;
+    const {name, phone, cpf, birthday} = customer;
+    
     try{
+        const {error} = customerSchema.validate(customer, {abortEarly: false});
+
+        if(error){
+            const erros = error.details.map(d => d.message);
+            res.status(400).send(erros);
+            return
+        }
+    
         let existingCpf = await connection.query("SELECT * FROM customers WHERE cpf = $1", [cpf])
 
-        if(existingCpf.rows.length !== 0){
+        if(existingCpf.rows.length !== 0 && existingCpf.rows[0].id.toString() !== id){
             res.sendStatus(409)
             return
         }
