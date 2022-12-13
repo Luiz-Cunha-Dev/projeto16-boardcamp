@@ -3,13 +3,15 @@ import { customerSchema } from "../schemas/customers.Schema.js";
 
 export async function getCustomers(req, res){
     const cpf = req.query.cpf
+    const offset = req.query.offset
+    const limit = req.query.limit
     let customers;
 
     try{
         if(!cpf){
-            customers = await connection.query("SELECT * FROM customers")
+            customers = await connection.query("SELECT * FROM customers OFFSET $1 LIMIT $2", [offset, limit])
         }else{
-            customers = await connection.query(`SELECT * FROM customers WHERE cpf LIKE $1`, [`${cpf}%`])
+            customers = await connection.query(`SELECT * FROM customers WHERE cpf LIKE $1 OFFSET $2 LIMIT $3`, [`${cpf}%`, offset, limit])
         }
 
         
@@ -34,18 +36,18 @@ export async function getCustomer(req, res){
     const {id} = req.params;
 
     try{
-        const customers = await connection.query("SELECT * FROM customers WHERE id = $1", [id])
+        const customer = await connection.query("SELECT * FROM customers WHERE id = $1", [id])
 
-        if(customers.rows.length === 0){
+        if(customer.rows.length === 0){
             res.sendStatus(404)
             return
         }
 
-        customers.rows.forEach(c => {
+        customer.rows.forEach(c => {
             c.birthday = c.birthday.toISOString().split('T')[0]
         });
 
-        res.send(customers.rows).status(200)
+        res.send(customer.rows).status(200)
 
     }catch(err){
         console.log(err);

@@ -3,16 +3,18 @@ import { connection } from "../database/db.js";
 export async function getRentals(req, res){
     const customerId = req.query.customerId
     const gameId = req.query.gameId
+    const offset = req.query.offset
+    const limit = req.query.limit
     let rentals;
 
     try{
 
         if(!customerId && !gameId){
-            rentals = await connection.query("SELECT * FROM rentals")
+            rentals = await connection.query("SELECT * FROM rentals OFFSET $1 LIMIT $2", [offset, limit])
         }else if(customerId){
-            rentals = await connection.query(`SELECT * FROM rentals WHERE rentals."customerId" = $1`, [customerId])
+            rentals = await connection.query(`SELECT * FROM rentals WHERE rentals."customerId" = $1 OFFSET $2 LIMIT $3`, [customerId, offset, limit])
         }else if(gameId){
-            rentals = await connection.query(`SELECT * FROM rentals WHERE rentals."gameId" = $1`, [gameId])
+            rentals = await connection.query(`SELECT * FROM rentals WHERE rentals."gameId" = $1 OFFSET $2 LIMIT $3`, [gameId, offset, limit])
         }
 
         const customers = await connection.query("SELECT customers.id, customers.name FROM customers")

@@ -2,12 +2,14 @@ import { connection } from "../database/db.js";
 
 export async function getGames(req, res){
     const name = req.query.name
+    const offset = req.query.offset
+    const limit = req.query.limit
     let games;
     try{
         if(!name){
-            games = await connection.query(`SELECT games.*, categories.name AS "categoryName", games.name FROM games JOIN categories ON games."categoryId" = categories.id`)
+            games = await connection.query(`SELECT games.*, categories.name AS "categoryName", games.name FROM games JOIN categories ON games."categoryId" = categories.id OFFSET $1 LIMIT $2`, [offset, limit])
         }else{
-            games = await connection.query(`SELECT games.*, categories.name AS "categoryName", games.name FROM games JOIN categories ON games."categoryId" = categories.id WHERE games.name LIKE $1`, [`${name}%`])
+            games = await connection.query(`SELECT games.*, categories.name AS "categoryName", games.name FROM games JOIN categories ON games."categoryId" = categories.id WHERE games.name LIKE $1 OFFSET $2 LIMIT $3`, [`${name}%`, offset, limit])
         }
         
 

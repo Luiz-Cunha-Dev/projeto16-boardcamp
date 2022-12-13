@@ -1,9 +1,11 @@
 import { connection } from "../database/db.js";
 
 export async function getCategories(req, res){
+    const offset = req.query.offset
+    const limit = req.query.limit
 
     try{
-        const categories = await connection.query("SELECT * FROM categories")
+        const categories = await connection.query("SELECT * FROM categories OFFSET $1 LIMIT $2", [offset, limit])
 
         if(!categories){
             console.log("Not found");
