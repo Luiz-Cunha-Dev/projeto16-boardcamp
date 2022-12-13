@@ -14,7 +14,6 @@ export async function getCustomers(req, res){
             customers = await connection.query(`SELECT * FROM customers WHERE cpf LIKE $1 OFFSET $2 LIMIT $3`, [`${cpf}%`, offset, limit])
         }
 
-        
 
         if(!customers){
             console.log("Not found");
@@ -47,7 +46,7 @@ export async function getCustomer(req, res){
             c.birthday = c.birthday.toISOString().split('T')[0]
         });
 
-        res.send(customer.rows).status(200)
+        res.send(customer.rows[0]).status(200)
 
     }catch(err){
         console.log(err);

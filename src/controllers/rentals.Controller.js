@@ -35,6 +35,7 @@ export async function getRentals(req, res){
             rentals.rows[i].customer= customers.rows.find(c => c.id === rentals.rows[i].customerId)
             rentals.rows[i].game= games.rows.find(g => g.id === rentals.rows[i].gameId)
         }
+        
 
         res.send(rentals.rows).status(200)
 
